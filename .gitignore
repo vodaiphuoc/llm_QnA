@@ -1,0 +1,12 @@
+__pycache__/
+*/__pycache__/
+.env
+myenv/
+*test*.py
+origin_crawl_data/
+docs/
+
+original_data/wiki/wikidata5m_corpus.txt
+original_data/wiki/wikidata5m_all_triplet.txt
+original_data/wiki/wikidata5m_entity.txt
+original_data/wiki/wikidata5m_relation.txt
