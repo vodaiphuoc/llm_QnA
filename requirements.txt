@@ -7,3 +7,7 @@ langchain-chroma
 chardet
 requests
 jq
+tavily-python
+fastapi
+loguru
+jinja2
