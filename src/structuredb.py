@@ -19,7 +19,7 @@ class ChatHistoryDB(object):
         try:
             with self.connection:
                 create_prompt = """
-CREATE TABLE chat_history (id INTEGER PRIMARY KEY, Topic TEXT, Role TEXT, Parts TEXT);
+CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY, Topic TEXT, Role TEXT, Parts TEXT);
 """ 
                 self.connection.execute(create_prompt)
         except sqlite3.Error as error:

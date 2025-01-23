@@ -48,7 +48,9 @@ class Agent(Agent_Base):
 <start_of_turn>user\n
     - Base on below Thought, Action and Observation, let think step-by-step and give Final answer to the Question.
     - Collect any relevant information in Observation in `additional_content` to support your Final answer
+    - If you cannot answer the question, ask user again to provide more information.
     - Give Final answer in Vietnamese language.
+    
     Question: {{query}}
 
     {{input_trajectory}}
@@ -102,8 +104,8 @@ class Agent(Agent_Base):
         )
     
     def final_processing(self, reponse: Dict[str,str])->str:
-        return reponse['answers']
-
+        return  "".join([ans['answer'] + ans['additional_content'] 
+                for ans in reponse['answers']])
 
     # history=[
     #     {"role": "user", "parts": "Hello"},

@@ -19,55 +19,197 @@ body {
 /* layout and common global classes */
 /* ---------------------------------------------------------------------- */
 
-.question_window {
-	height: 95vh;
-}
-
-.paragraph_window {
-	height: 55vh;
-}
-
-.chat_window {
-	height: 40vh;
-}
-
-
-.paragraph_window,
-.question_window,
-.chat_window {
-	border-radius: 10px;
+.col.topics_window
+.col.chat_window {
+	height: 100%;
+    border-radius: 10px;
 	box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
 	background-color: #f8f8f8;
 	overflow: hidden;
 }
 
-.top_menu {
+
+.row.top_menu {
 	background-color: #fff;
 	padding: 3px 0px;
 	box-shadow: 0 1px 30px rgba(0, 0, 0, 0.1);
 }
 
-.paragraph_id {
+
+.row.top_menu .title {
 	text-align: center;
 	color: #337ab7;
 	font-size: 18px;
 }
 
-.question-list {
-	color: #337ab7;
-	font-size: 18px;
+
+
+
+/* messages inside the chatbox */
+/* ---------------------------------------------------------------------- */
+.row.messages {
+	position: relative;
+	list-style: none;
+	padding: 20px 10px 0 10px;
+	margin: 0;
+	height: 80%;
+	overflow: scroll;
 }
 
-.top_menu .title {
-	text-align: center;
-	color: #337ab7;
-	font-size: 18px;
+
+.messages .message {
+	clear: both;
+	overflow: hidden;
+	margin-bottom: 20px;
+	transition: all 0.5s linear;
+	opacity: 0;
 }
 
-.row.buttons_paragraph_row {
+.messages .message .avatar {
+	height: 40px;
+	width: 40px;
+	background-size: cover !important;
+	border-radius: 50%;
+	display: inline-block;
+}
+
+.messages .message .timestamp {
+	font-size: 10px;
+	font-weight: 300;
+	text-align: right;
+	margin-top: 5px;
+}
+
+.messages .message.appeared {
+	opacity: 1;
+}
+
+.messages .message .text_wrapper {
+	display: inline-block;
+	padding: 10px;
+	border-radius: 6px;
+	min-width: 120px;
+	position: relative;
+}
+
+.messages .message .text_wrapper::after,
+.messages .message .text_wrapper:before {
+	top: 18px;
+	border: solid transparent;
+	content: ' ';
+	height: 0;
+	width: 0;
+	position: absolute;
+	pointer-events: none;
+}
+
+.messages .message .text_wrapper::after {
+	border-width: 13px;
+	margin-top: 0px;
+}
+
+.messages .message .text_wrapper::before {
+	border-width: 15px;
+	margin-top: -2px;
+}
+
+/* agent message */
+
+.messages .message.left .avatar {
+	float: left;
+}
+
+.messages .message.left .text_wrapper {
+	background-color: #f3eeca;
+	margin-left: 20px;
+}
+
+.messages .message.left .text_wrapper::after,
+.messages .message.left .text_wrapper::before {
+	right: 100%;
+	border-right-color: #f3eeca;
+}
+
+.messages .message.left .timestamp {
+	color: #b0742f;
+}
+
+/* user message */
+.messages .message.right .avatar {
+	float: right;
+}
+
+.messages .message.right .text_wrapper {
+	background-color: #b0d4f3;
+	margin-right: 20px;
+	float: right;
+}
+
+.messages .message.right .text_wrapper::after,
+.messages .message.right .text_wrapper::before {
+	left: 100%;
+	border-left-color: #b0d4f3;
+}
+
+.messages .message.right .timestamp {
+	color: #1a5770;
+}
+
+/* text inpur from user */
+.row.bottom_wrapper {
+    position: relative;
 	background-color: #fff;
-	padding: 0px 0px;  /*must be 0 padding*/
-	box-shadow: 0 1px 30px rgba(0, 0, 0, 0.1);
+	padding: 15px;
+	bottom: 0;
+	display: inline-flex;
+    flex-grow: 1;
+	/* outline-width: 0; */
+    width: 100%;
+	padding: 10px;
+	border: 1px solid #bcbdc0;
+	border-radius: 50px;
+	margin-right: 15px;
 }
 
+#msg_input {
+    position:  relative;
+    display:  inline;
+    width: auto;
+	flex-grow: 1;
+	outline-width: 0;
+	padding: 10px;
+	border: 1px solid #bcbdc0;
+	border-radius: 50px;
+	margin-right: 15px;
+}
 
+.app_button#send_button{
+    position:  relative;
+    display: inline;
+	width: 10%;
+	background-color: #a3d063;
+	border-radius: 50px;
+	cursor: pointer;
+	padding: 12px;
+
+	color: #fff;
+	font-size: 18px;
+	font-weight: 300;
+	text-align: center;
+}
+
+.app_button#create_new_chat{
+    position:  relative;
+    display: inline;
+	width: 100%;
+
+	background-color: #a3d063;
+	border-radius: 20px;
+	cursor: pointer;
+	padding: 0px;
+    margin: 0%;
+	color: #fff;
+	font-size: 16px;
+	font-weight: 300;
+	text-align: center;
+}

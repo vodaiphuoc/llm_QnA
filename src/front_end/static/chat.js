@@ -77,55 +77,47 @@ $(document).ready(function() {
     });
 });
 
-/**
- * Get input from user and show it on screen on button click.
- */
-$(document).ready(function(){
-	$("#send_button").click(function() {
-		// get and show message and reset input
-		var paragraph_id = document.getElementsByClassName('paragraph_id')[0].innerHTML;
-		var user_input_message = $('#msg_input').val();
-		showUserMessage(user_input_message);
+
+function chatsession_callback() {
+    /**
+     * Callback function when history topic or `create_new_chat` are 
+     * processes:
+     *  (1) determine topic, if `create_new_chat`, topic is empty string
+     *  (2) create new instance of websocket
+     *  (3) listening to #send_button
+     */
+
+    // step (2)
+    var ws = new WebSocket("ws://localhost:8080/ws");
+
+    // step (3)
+    $("#send_button").click(function() {
+        var user_input_message = $('#msg_input').val();
+        showUserMessage(user_input_message);
 		$('#msg_input').val('');
 
+        ws.send(JSON.stringify({
+            topic: '',
+            user_message: user_input_message
+        }))
+    })
 
-		// send message to server
-		let myHeaders = new Headers({
-	        "Content-Type": "application/json",
-	    });
+    ws.addEventListener("message", (event) => {
+        showBotMessage(event.data);
+      });
+}
 
-	    fetch('/get_message', {
-	        method: 'POST',
-	        body: JSON.stringify({
-	            para_id: paragraph_id,
-	            user_message: user_input_message
-	        }),
-	        headers: myHeaders
-	    })
-	    .then((response)=>{
-	        if (response.ok) {
-	            response.text()
-	            .then((message)=>{
-	                console.log(message);
-	                showBotMessage(message);
-	            })
-	            .catch((error)=>{
-	                console.error('Failed to get model response', error);
-	            });
+/**
+ * Assign event handler to `create_new_chat`
+ */
+$(document).ready(function(){
+    $("#create_new_chat").on('click', chatsession_callback);
 
-	        } else {
-	            throw new Error('response is not OK status');
-	        }
-	        
-	    });
+    
+})
 
-		// show bot message
-		// setTimeout(function () {
-		// 	showBotMessage(randomstring());
-		// }, 300);
 
-   });
- });
+
 
 
 /**
