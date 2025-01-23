@@ -86,19 +86,29 @@ async def load_history(request: Request):
         List[str]: List of topic names
     """
     all_topics = request.app.agent.chat_hist_db.get_topics()
-    return JSONResponse(status_code = 200, content = all_topics)
+
+    return JSONResponse(
+        status_code = 200, 
+        content = all_topics
+    )
 
 
 @app.post("/load_history", response_class=JSONResponse)
-async def load_history(topic_value: Annotated[str, Body()],
-                        request: Request):
+async def load_history(
+    body_data: Annotated[Dict[str,str], Body()],
+    request: Request):
     """
     Given a topic value, query in database to get chat history
     Return type:
         List[Dict[str,str]] where a dictionary has keys 'role' and 'msg'
     """
+    topic_value = body_data['topic_value']
     chat_history = request.app.agent.chat_hist_db.get_chat_history(topic_value)
-    return JSONResponse(status_code = 200, content = chat_history)
+
+    return JSONResponse(
+        status_code = 200, 
+        content = chat_history
+    )
 
 
 @app.websocket("/ws")
@@ -110,8 +120,9 @@ async def chat_router(websocket: WebSocket):
             data = await websocket.receive_json()
             
             # unpack data
+            use_timestamp = data['time_stamp']
             user_message = data['user_message']
-            topic_value = user_message[:25] if data['topic'] == '' else data['topic']
+            topic_value = user_message[:30] if data['topic'] == '' else data['topic']
 
             # agent inference
             agent_response = websocket.app.agent(user_message)
@@ -120,8 +131,8 @@ async def chat_router(websocket: WebSocket):
             websocket.app.agent.chat_hist_db.insert_new_turns(
                 topic = topic_value,
                 new_msgs = [
-                    {"role": "user", "parts": user_message},
-                    {"role": "model", "parts": agent_response}
+                    {"role": "user", "parts": user_message, 'timestamp': use_timestamp},
+                    {"role": "agent", "parts": agent_response, 'timestamp': use_timestamp}
                 ]
             )
             

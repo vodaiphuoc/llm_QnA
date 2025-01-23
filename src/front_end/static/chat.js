@@ -1,12 +1,12 @@
+const topic_icon = '<i class="bi bi-chat-left-dots">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</i>';
+
 function display_chat_history(topic_value) {
     /**
      * Given `topic_value` of clicked `tag_id` element, send post request to server
      * and render old history chat
+     * Args:
+     *  - topic_value (str)
      */
-
-    // let myHeaders = new Headers({
-    //     "Content-Type": "application/json",
-    // });
 
     fetch('/load_history', {
         method: 'POST',
@@ -20,8 +20,14 @@ function display_chat_history(topic_value) {
     .then((response)=> {
         if (response.ok) {
             response.json()
-            .then((data)=>{
-                
+            .then((chat_history)=>{
+                for (i = 0; i < chat_history.length; i++) {
+                    showMessageByRole(
+                        chat_history[i]['parts'],
+                        chat_history[i]['role'],
+                        chat_history[i]['timestamp']
+                    );
+                }
             });
         } else {
             console.log('error loading old messages');
@@ -38,50 +44,70 @@ function chatsession_callback() {
      *  (1) determine topic, if `create_new_chat`, topic is empty string
      *  (2) render chat history of current topic
      *  (3) create new instance of websocket
-     *  (5) listening to #send_button
+     *  (4) add listener to #send_button for sending msgs
+     *  (5) listening on `message` event of websocket
      */
 
-    
+    console.log('check topic: ', this.id, $(`#${this.id}`).text());
+
     // step (1)
     let topic_value = ''
     if (this.id === 'create_new_chat') {
         topic_value = ''
     } else {
         topic_value = $(`#${this.id}`).text();
+        // step (2)
+        display_chat_history(topic_value);
     }
-
-    // step (2)
-    display_chat_history(topic_value)
 
     // step (3)
     var ws = new WebSocket("ws://localhost:8080/ws");
 
-    // step (4)
+    
     $("#send_button").click(function() {
+
+        console.log('send button, check topic_value: ', topic_value);
+
+        // step (4)
         var user_input_message = $('#msg_input').val();
-        showMessageByRole(user_input_message, 'user');
+        let user_timestamp = displayDate = (getCurrentTimestamp()).toLocaleString('en-IN', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+        });
+        showMessageByRole(user_input_message, 'user',user_timestamp);
 		$('#msg_input').val('');
 
         ws.send(JSON.stringify({
             topic: topic_value,
-            user_message: user_input_message
-        }))
-    })
+            user_message: user_input_message,
+            time_stamp: user_timestamp
+        }));
+    });
 
     ws.addEventListener("message", (event) => {
         let processed_data = JSON.parse(event.data);
         
         // display new message
         showMessageByRole(processed_data['msg'], 'agent');
+
+        console.log('check agent reponse: ',processed_data);
         
         // key `topic` only appear when `new_chat` is created
         if ('topic' in processed_data) {
-            let new_id = $("#all_topics").length;
-            $("#all_topics").append(`<li id="topic_${new_id}">${processed_data['topic']}</li>`);
-        }
-        
 
-      });
+            console.log('check length of all topics: ', $("[id^=topic_]").length);
+
+            let new_id = $("[id^=topic_]").length;
+            $("#all_topics").append(`<li id="topic_${new_id}">${topic_icon}${processed_data['topic']}</li>`);
+
+            topic_value = processed_data['topic'];
+        }
+
+
+
+    });
 }
 
 
@@ -106,10 +132,9 @@ function load_topics() {
 
                 for (i = 0; i < response_topics.length; i++) {
                     // append topic elements to `all_topics`
-                    $("#all_topics").append(`<li id="topic_${i}">${response_topics[i]}</li>`)
+                    $("#all_topics").append(`<li id="topic_${i}">${topic_icon}${response_topics[i]}</li>`)
                     
                     // assign click handler
-                    console.log('check li: ',$(`#topic_${i}`));
                     $(`li#topic_${i}`).on("click", chatsession_callback);
                 }
             });

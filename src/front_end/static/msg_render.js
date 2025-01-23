@@ -15,7 +15,6 @@ function renderMessageToScreen(args) {
 	// init element
 	let message = $(`
 	<li class="message ${args.message_side}">
-		<div class="avatar"></div>
 		<div class="text_wrapper">
 			<div class="text">${args.text}</div>
 			<div class="timestamp">${args.displayDate}</div>

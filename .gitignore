@@ -10,3 +10,5 @@ original_data/wiki/wikidata5m_corpus.txt
 original_data/wiki/wikidata5m_all_triplet.txt
 original_data/wiki/wikidata5m_entity.txt
 original_data/wiki/wikidata5m_relation.txt
+
+src/front_end/templates/test.html
