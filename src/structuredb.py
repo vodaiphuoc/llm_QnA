@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY, Topic TEXT, Rol
         try:
             with self.connection:
                 insert_prompt = """
-                    INSERT INTO chat_history (SearchFileUrl, RawContent, RenderContent) VALUES (?,?,?);
+                    INSERT INTO chat_history (Topic, Role, Parts) VALUES (?,?,?);
                 """ 
                 self.connection.executemany(insert_prompt, prepare_data)
 
@@ -56,12 +56,27 @@ CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY, Topic TEXT, Rol
     def close(self):
         self.connection.close()
 
-    def get_chat_history(self, topic:str)->str:
+    def get_topics(self)->List[str]:
         try:
             with self.connection:
-                query_prompt = f"""SELECT {target_col} FROM user_files WHERE SearchFileUrl LIKE '%{url}';"""
+                query_prompt = f"""SELECT Topic FROM chat_history"""
                 records = self.connection.execute(query_prompt).fetchall()
-                return records[0][0] if self.db_type == 'implement' else records[0]
+                return list(set([ele[0] for ele in records]))
         
         except Exception as error:
-            print(f"Cannot peform select file {url} error: ", error)        
+            print(f"Cannot load topics, error: ", error)
+
+    def get_chat_history(self, topic:str)->List[Dict[str,str]]:
+        try:
+            with self.connection:
+                query_prompt = f"""SELECT Role, Parts FROM chat_history WHERE Topic LIKE '%{topic}';"""
+                records = self.connection.execute(query_prompt).fetchall()
+                return [{
+                    'role': _rec[0],
+                    'msg': _rec[1]
+                } 
+                for _rec in records
+                ]
+        
+        except Exception as error:
+            print(f"Cannot load history with topic {topic} error: ", error)        

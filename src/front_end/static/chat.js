@@ -1,65 +1,124 @@
-/**
- * Returns the current datetime for the message creation.
- */
-function getCurrentTimestamp() {
-	return new Date();
+function display_chat_history(topic_value) {
+    /**
+     * Given `topic_value` of clicked `tag_id` element, send post request to server
+     * and render old history chat
+     */
+
+    // let myHeaders = new Headers({
+    //     "Content-Type": "application/json",
+    // });
+
+    fetch('/load_history', {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            topic_value: topic_value
+        })
+    })
+    .then((response)=> {
+        if (response.ok) {
+            response.json()
+            .then((data)=>{
+                
+            });
+        } else {
+            console.log('error loading old messages');
+        }
+        
+    });
+
 }
 
-/**
- * Renders a message on the chat screen based on the given arguments.
- * This is called from the `showUserMessage` and `showBotMessage`.
- */
-function renderMessageToScreen(args) {
-	// local variables
-	let displayDate = (getCurrentTimestamp()).toLocaleString('en-IN', {
-		month: 'short',
-		day: 'numeric',
-		hour: 'numeric',
-		minute: 'numeric',
-	});
-	let messagesContainer = $('.messages');
+function chatsession_callback() {
+    /**
+     * Callback function when history topic or `create_new_chat` are 
+     * processes:
+     *  (1) determine topic, if `create_new_chat`, topic is empty string
+     *  (2) render chat history of current topic
+     *  (3) create new instance of websocket
+     *  (5) listening to #send_button
+     */
 
-	// init element
-	let message = $(`
-	<li class="message ${args.message_side}">
-		<div class="avatar"></div>
-		<div class="text_wrapper">
-			<div class="text">${args.text}</div>
-			<div class="timestamp">${displayDate}</div>
-		</div>
-	</li>
-	`);
+    
+    // step (1)
+    let topic_value = ''
+    if (this.id === 'create_new_chat') {
+        topic_value = ''
+    } else {
+        topic_value = $(`#${this.id}`).text();
+    }
 
-	// add to parent
-	messagesContainer.append(message);
+    // step (2)
+    display_chat_history(topic_value)
 
-	// animations
-	setTimeout(function () {
-		message.addClass('appeared');
-	}, 0);
-	messagesContainer.animate({ scrollTop: messagesContainer.prop('scrollHeight') }, 300);
+    // step (3)
+    var ws = new WebSocket("ws://localhost:8080/ws");
+
+    // step (4)
+    $("#send_button").click(function() {
+        var user_input_message = $('#msg_input').val();
+        showMessageByRole(user_input_message, 'user');
+		$('#msg_input').val('');
+
+        ws.send(JSON.stringify({
+            topic: topic_value,
+            user_message: user_input_message
+        }))
+    })
+
+    ws.addEventListener("message", (event) => {
+        let processed_data = JSON.parse(event.data);
+        
+        // display new message
+        showMessageByRole(processed_data['msg'], 'agent');
+        
+        // key `topic` only appear when `new_chat` is created
+        if ('topic' in processed_data) {
+            let new_id = $("#all_topics").length;
+            $("#all_topics").append(`<li id="topic_${new_id}">${processed_data['topic']}</li>`);
+        }
+        
+
+      });
 }
 
 
-/**
- * Displays the user message on the chat screen. This is the right side message.
- */
-function showUserMessage(message) {
-	// render user input message
-	renderMessageToScreen({
-		text: message,
-		message_side: 'right',
-	});
-}
+function load_topics() {
+    /**
+     * Load all topics when start papges
+     */
 
-/**
- * Displays the chatbot message on the chat screen. This is the left side message.
- */
-function showBotMessage(message) {
-	renderMessageToScreen({
-		text: message,
-		message_side: 'left',
-	});
+    fetch('/load_topics', {
+        method: 'POST',
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            'user': 'user'
+        })
+    })
+    .then((response)=> {
+        if (response.ok) {
+            response.json()
+            .then((response_topics)=>{
+
+                for (i = 0; i < response_topics.length; i++) {
+                    // append topic elements to `all_topics`
+                    $("#all_topics").append(`<li id="topic_${i}">${response_topics[i]}</li>`)
+                    
+                    // assign click handler
+                    console.log('check li: ',$(`#topic_${i}`));
+                    $(`li#topic_${i}`).on("click", chatsession_callback);
+                }
+            });
+        } else {
+            console.log('error loading topics');
+        }
+        
+    });
+
 }
 
 
@@ -78,69 +137,14 @@ $(document).ready(function() {
 });
 
 
-function chatsession_callback() {
-    /**
-     * Callback function when history topic or `create_new_chat` are 
-     * processes:
-     *  (1) determine topic, if `create_new_chat`, topic is empty string
-     *  (2) create new instance of websocket
-     *  (3) listening to #send_button
-     */
-
-    // step (2)
-    var ws = new WebSocket("ws://localhost:8080/ws");
-
-    // step (3)
-    $("#send_button").click(function() {
-        var user_input_message = $('#msg_input').val();
-        showUserMessage(user_input_message);
-		$('#msg_input').val('');
-
-        ws.send(JSON.stringify({
-            topic: '',
-            user_message: user_input_message
-        }))
-    })
-
-    ws.addEventListener("message", (event) => {
-        showBotMessage(event.data);
-      });
-}
-
 /**
  * Assign event handler to `create_new_chat`
  */
 $(document).ready(function(){
+    load_topics();
+
     $("#create_new_chat").on('click', chatsession_callback);
 
     
 })
 
-
-
-
-
-/**
- * Returns a random string. Just to specify bot message to the user.
- */
-function randomstring(length = 20) {
-	let output = '';
-
-	// magic function
-	var randomchar = function () {
-		var n = Math.floor(Math.random() * 62);
-		if (n < 10) return n;
-		if (n < 36) return String.fromCharCode(n + 55);
-		return String.fromCharCode(n + 61);
-	};
-
-	while (output.length < length) output += randomchar();
-	return output;
-}
-
-/**
- * Set initial bot message to the screen for the user.
- */
-$(window).on('load', function () {
-	showBotMessage('Hello there! what u want to ask');
-});

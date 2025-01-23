@@ -30,9 +30,11 @@ class ConnectionManager:
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
 
-    async def send_personal_message(self, message: str, websocket: WebSocket):
-        await websocket.send_text(message)
-
+    async def send_personal_message(self, message: str,websocket: WebSocket, topic = None):
+        if topic is None:
+            await websocket.send_text(json.dumps({'msg': message}))
+        else:
+            await websocket.send_text(json.dumps({'msg': message, 'topic': topic}))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -76,6 +78,28 @@ async def index_router(request: Request):
 		name = "index.html"
 		)
 
+@app.post("/load_topics", response_class=JSONResponse)
+async def load_history(request: Request):
+    """
+    Load all available topics in DB
+    Return type:
+        List[str]: List of topic names
+    """
+    all_topics = request.app.agent.chat_hist_db.get_topics()
+    return JSONResponse(status_code = 200, content = all_topics)
+
+
+@app.post("/load_history", response_class=JSONResponse)
+async def load_history(topic_value: Annotated[str, Body()],
+                        request: Request):
+    """
+    Given a topic value, query in database to get chat history
+    Return type:
+        List[Dict[str,str]] where a dictionary has keys 'role' and 'msg'
+    """
+    chat_history = request.app.agent.chat_hist_db.get_chat_history(topic_value)
+    return JSONResponse(status_code = 200, content = chat_history)
+
 
 @app.websocket("/ws")
 async def chat_router(websocket: WebSocket):
@@ -85,10 +109,27 @@ async def chat_router(websocket: WebSocket):
         while True:
             data = await websocket.receive_json()
             
+            # unpack data
             user_message = data['user_message']
+            topic_value = user_message[:25] if data['topic'] == '' else data['topic']
+
+            # agent inference
             agent_response = websocket.app.agent(user_message)
-            await websocket.app.manager.send_personal_message(message = agent_response, 
-                                                websocket= websocket)
+
+            # add to history chat of current topic
+            websocket.app.agent.chat_hist_db.insert_new_turns(
+                topic = topic_value,
+                new_msgs = [
+                    {"role": "user", "parts": user_message},
+                    {"role": "model", "parts": agent_response}
+                ]
+            )
+            
+            # send data
+            await websocket.app.manager.send_personal_message(
+                message = agent_response,
+                topic = topic_value if data['topic'] == '' else None,
+                websocket= websocket)
 
     except WebSocketDisconnect:
         websocket.app.manager.disconnect(websocket)
