@@ -47,8 +47,7 @@ class Agent(Agent_Base):
     final_answer_prompt = f"""
 <start_of_turn>user\n
     - Base on below Thought, Action and Observation, let think step-by-step and give Final answer to the Question.
-    - Collect any relevant information in Observation in `additional_content` to support your Final answer
-    - If you cannot answer the question, ask user again to provide more information.
+    - Collect any relevant information in Observation in `additional_content` to support your Final answer.
     - Give Final answer in Vietnamese language.
     
     Question: {{query}}

@@ -39,10 +39,10 @@ class Agent(Agent_Base):
     <end_of_turn><eos>\n"""
 
     single_trajectory = f"""
-    Thought: {{thought}}
-    Action: {{action}}
-    Action Input: {{action_input}}
-    Observation: {{observation}}
+    **Thought {{ith}}**: {{thought}}
+    **Action {{ith}}**: {{action}}
+    **Action Input {{ith}}**: {{action_input}}
+    **Observation {{ith}}**: {{observation}}
 """
     final_answer_prompt = f"""
 <start_of_turn>user\n
@@ -82,13 +82,12 @@ class Agent(Agent_Base):
         """
         return direct_answer
 
-    def post_execute(self, reponse_dict: dict)->str:
+    def post_execute(self, ith:int, reponse_dict: dict)->str:
         """
         Post processing for function calling, invoke selected tools
         Returns:
             formated trajectory
         """
-        
         # consturct args
         exec_args = {arg['key']: arg['value'] for arg in reponse_dict['Action']['args']}
 
@@ -96,6 +95,7 @@ class Agent(Agent_Base):
         _tool_results = self.func_name_to_func.get(reponse_dict['Action']['function_name'])(**exec_args)
         
         return self.single_trajectory.format(
+            ith = ith,
             thought = reponse_dict['Thought'],
             action = reponse_dict['Action']['function_name'],
             action_input = exec_args,
@@ -106,10 +106,6 @@ class Agent(Agent_Base):
         return  "".join([ans['answer'] + ans['additional_content'] 
                 for ans in reponse['answers']])
 
-    # history=[
-    #     {"role": "user", "parts": "Hello"},
-    #     {"role": "model", "parts": "Great to meet you. What would you like to know?"},
-    # ]
     def __call__(self, prompt_data:str, topic:str = None)->List[str]:
         # step 0
         init_prompt = self.intent_prompt.format(
@@ -130,34 +126,44 @@ class Agent(Agent_Base):
             chat_history = []
 
         # step 1.0:
-        
-        chat_sess = self.model.start_chat(history = chat_history)
-        response = chat_sess.send_message(
-            content = init_prompt,
-            generation_config = genai.GenerationConfig(
-                max_output_tokens = 1000,
-                temperature = 0.1
-        ))
+        traject_list = []
+        for ith in range(int(os.environ['REASON_STEPS'])):
 
-        # step 1.1
-        post_answer_processing = response.text.replace('```json','').replace('```','')
-        # step 2:
-        trajectory = self.post_execute(reponse_dict = json.loads(post_answer_processing))
+            chat_sess = self.model.start_chat(history = chat_history)
+            response = chat_sess.send_message(
+                content = init_prompt,
+                generation_config = genai.GenerationConfig(
+                    max_output_tokens = 1000,
+                    temperature = 0.1
+            ))
+
+            # step 1.1
+            post_answer_processing = response.text.replace('```json','').replace('```','')
+            # step 2:
+            trajectory = self.post_execute(
+                ith= ith+1,
+                reponse_dict = json.loads(post_answer_processing)
+            )
+
+            traject_list.append(trajectory)
+
+            init_prompt = self.intent_prompt.format(
+                query = prompt_data + "".join(traject_list),
+                tool_list_desription = self.tool_list_desription,
+                examples = self.examples,
+            )
+
         # step 3:
         final_prompt = self.final_answer_prompt.format(
             query = prompt_data,
-            tool_list_desription = self.tool_list_desription,
-            input_trajectory = trajectory)
-        
-        print('final prompt: ', final_prompt)
+            input_trajectory = "".join(traject_list))
 
         response = chat_sess.send_message(
             content = final_prompt,
             generation_config = genai.GenerationConfig(
-                # max_output_tokens = 1000,
-                # temperature = 0.1,
                 response_mime_type = "application/json",
-                response_schema=  FinalAnswer
+                response_schema = FinalAnswer
         ))
+
         # step 4
         return self.final_processing(json.loads(response.text))
