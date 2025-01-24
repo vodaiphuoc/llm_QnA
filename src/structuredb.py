@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY, Topic TEXT, Rol
             - topic = 'Hoi An'
             - new_msgs = [
                 {"role": "user", "parts": "Hello", 'timestamp': '20-01-2025'},
-                {"role": "agent", "parts": "Great to meet you", 'timestamp': '20-01-2025'}
+                {"role": "model", "parts": "Great to meet you", 'timestamp': '20-01-2025'}
             ]
         """
         prepare_data = [(topic, msg['role'], msg['parts'], msg['timestamp']) for msg in new_msgs]

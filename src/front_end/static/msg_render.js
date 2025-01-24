@@ -32,6 +32,12 @@ function renderMessageToScreen(args) {
 	messagesContainer.animate({ scrollTop: messagesContainer.prop('scrollHeight') }, 300);
 }
 
+/**
+ * Clear all chatbox in `.messages`
+ */
+function clear_current_messages() {
+    $('.messages').empty();
+}
 
 /**
  * Displays the user or agent message on the chat screen
